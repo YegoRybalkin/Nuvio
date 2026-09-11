@@ -2,7 +2,7 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { DEFAULT_CLAUDE_MODEL } from '../lib/claude'
 import { schedule } from '../lib/srs'
-import type { Grade, QuizAttempt, StudySet } from '../types'
+import type { Grade, MatchAttempt, QuizAttempt, StudySet } from '../types'
 
 function startOfDay(ts: number): number {
   const d = new Date(ts)
@@ -31,6 +31,7 @@ interface StudyStore extends GamificationState, AiSettingsState {
   renameStudySet: (id: string, title: string) => void
   gradeFlashcard: (setId: string, cardId: string, grade: Grade) => void
   recordQuizAttempt: (setId: string, attempt: QuizAttempt, xpEarned: number) => void
+  recordMatchAttempt: (setId: string, attempt: MatchAttempt, xpEarned: number) => void
   addXp: (amount: number) => void
   setClaudeApiKey: (key: string) => void
   setClaudeModel: (model: string) => void
@@ -98,6 +99,15 @@ export const useStudyStore = create<StudyStore>()(
         set((state) => ({
           studySets: state.studySets.map((s) =>
             s.id === setId ? { ...s, quizAttempts: [...s.quizAttempts, attempt] } : s,
+          ),
+          ...touchStreak(state),
+          xp: state.xp + xpEarned,
+        })),
+
+      recordMatchAttempt: (setId, attempt, xpEarned) =>
+        set((state) => ({
+          studySets: state.studySets.map((s) =>
+            s.id === setId ? { ...s, matchAttempts: [...s.matchAttempts, attempt] } : s,
           ),
           ...touchStreak(state),
           xp: state.xp + xpEarned,

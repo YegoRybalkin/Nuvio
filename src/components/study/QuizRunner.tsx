@@ -2,6 +2,7 @@ import { motion } from 'framer-motion'
 import { Check, PartyPopper, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { celebrateBig } from '../../lib/confetti'
+import { IMPORTANCE_CLASS, IMPORTANCE_LABEL } from '../../lib/importance'
 import { useStudyStore } from '../../store/useStudyStore'
 import type { QuizQuestion } from '../../types'
 
@@ -105,6 +106,13 @@ export default function QuizRunner({
         animate={{ opacity: 1, y: 0 }}
         className="mt-6 rounded-2xl border border-white/10 bg-surface p-6"
       >
+        {question.importance && (
+          <span
+            className={`mb-2 inline-block rounded-full px-2.5 py-1 text-[11px] font-medium ${IMPORTANCE_CLASS[question.importance]}`}
+          >
+            {IMPORTANCE_LABEL[question.importance]}
+          </span>
+        )}
         <p className="font-display text-lg font-medium leading-snug text-ink">{question.prompt}</p>
 
         <div className="mt-5 flex flex-col gap-2.5">

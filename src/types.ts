@@ -1,5 +1,7 @@
 export type Grade = 'again' | 'hard' | 'good' | 'easy'
 
+export type Importance = 'core' | 'supporting' | 'minor'
+
 export interface SrsState {
   repetitions: number
   easeFactor: number
@@ -14,6 +16,7 @@ export interface Flashcard {
   front: string
   back: string
   cloze: boolean
+  importance?: Importance
   srs: SrsState
 }
 
@@ -26,6 +29,7 @@ export interface QuizQuestion {
   choices: string[]
   correctIndex: number
   explanation: string
+  importance?: Importance
 }
 
 export interface QuizAttempt {
@@ -34,10 +38,19 @@ export interface QuizAttempt {
   total: number
 }
 
+export interface MatchAttempt {
+  completedAt: number
+  pairs: number
+  seconds: number
+  mistakes: number
+}
+
 export interface Concept {
   name: string
   explanation: string
   whyItMatters: string
+  shortDefinition?: string
+  importance?: Importance
 }
 
 export type GenerationMode = 'ai' | 'heuristic'
@@ -55,4 +68,5 @@ export interface StudySet {
   flashcards: Flashcard[]
   quiz: QuizQuestion[]
   quizAttempts: QuizAttempt[]
+  matchAttempts: MatchAttempt[]
 }

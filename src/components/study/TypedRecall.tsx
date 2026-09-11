@@ -1,4 +1,4 @@
-import { RotateCw } from 'lucide-react'
+import { Check, Send } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { celebrate } from '../../lib/confetti'
 import { IMPORTANCE_CLASS, IMPORTANCE_LABEL } from '../../lib/importance'
@@ -14,7 +14,10 @@ const GRADE_BUTTONS: { grade: Grade; label: string; hint: string; className: str
   { grade: 'easy', label: 'Easy', hint: '~6d+', className: 'bg-brand-500/15 text-brand-400 hover:bg-brand-500/25' },
 ]
 
-export default function FlashcardStudy({
+/** Forces active production before revealing the answer: typing what you
+ * remember, unprompted, is a stronger retrieval-practice signal than
+ * recognizing the right answer in a flipped card or a multiple-choice list. */
+export default function TypedRecall({
   setId,
   cards,
   onDone,
@@ -27,7 +30,8 @@ export default function FlashcardStudy({
   const due = useMemo(() => cards.filter((c) => isDue(c.srs)), [cards])
   const [studyAhead, setStudyAhead] = useState(false)
   const [queue, setQueue] = useState<string[]>(() => due.map((c) => c.id))
-  const [flipped, setFlipped] = useState(false)
+  const [draft, setDraft] = useState('')
+  const [revealed, setRevealed] = useState(false)
   const [reviewed, setReviewed] = useState(0)
 
   const cardMap = useMemo(() => new Map(cards.map((c) => [c.id, c])), [cards])
@@ -38,6 +42,7 @@ export default function FlashcardStudy({
   if (queue.length === 0 && reviewed === 0 && !studyAhead) {
     return (
       <EmptyDueState
+        message="No cards are due for recall practice right now. Come back later, or practice ahead if you want extra reps."
         onStudyAhead={() => {
           setStudyAhead(true)
           setQueue(cards.slice(0, 15).map((c) => c.id))
@@ -47,15 +52,19 @@ export default function FlashcardStudy({
   }
 
   if (!current) {
-    return <SessionComplete count={reviewed} onRestart={onDone ?? (() => window.location.reload())} />
+    return (
+      <SessionComplete count={reviewed} noun="cards" onRestart={onDone ?? (() => window.location.reload())} />
+    )
   }
+
+  const reveal = () => setRevealed(true)
 
   const handleGrade = (grade: Grade) => {
     gradeFlashcard(setId, current.id, grade)
-    setFlipped(false)
+    setRevealed(false)
+    setDraft('')
     setQueue((q) => {
       const rest = q.slice(1)
-      // "Again" puts the card back later in this same session for re-drilling.
       return grade === 'again' ? [...rest, current.id] : rest
     })
     setReviewed((n) => n + 1)
@@ -66,39 +75,57 @@ export default function FlashcardStudy({
     <div className="mx-auto max-w-xl">
       <ProgressBar current={reviewed} total={Math.max(totalThisSession, 1)} />
 
-      <div
-        className={`flip-card mt-6 h-72 cursor-pointer select-none ${flipped ? 'flipped' : ''}`}
-        onClick={() => setFlipped((f) => !f)}
-      >
-        <div className="flip-card-inner relative h-full w-full">
-          <div className="flip-card-face absolute inset-0 flex flex-col items-center justify-center overflow-y-auto rounded-3xl border border-white/10 bg-surface p-8 text-center shadow-xl scrollbar-thin">
-            <div className="mb-3 flex shrink-0 items-center gap-1.5">
-              <span className="rounded-full bg-white/5 px-2.5 py-1 text-[11px] font-medium uppercase tracking-wide text-muted">
-                {current.cloze ? 'Fill in the blank' : 'Question'}
-              </span>
-              {current.importance && (
-                <span
-                  className={`rounded-full px-2.5 py-1 text-[11px] font-medium ${IMPORTANCE_CLASS[current.importance]}`}
-                >
-                  {IMPORTANCE_LABEL[current.importance]}
-                </span>
-              )}
-            </div>
-            <p className="font-display text-lg font-semibold leading-snug text-ink">{current.front}</p>
-            <span className="mt-6 flex shrink-0 items-center gap-1.5 text-xs text-muted">
-              <RotateCw size={13} /> Tap to reveal
+      <div className="mt-6 rounded-3xl border border-white/10 bg-surface p-8">
+        <div className="mb-4 flex items-center gap-1.5">
+          <span className="rounded-full bg-white/5 px-2.5 py-1 text-[11px] font-medium uppercase tracking-wide text-muted">
+            {current.cloze ? 'Fill in the blank' : 'Question'}
+          </span>
+          {current.importance && (
+            <span
+              className={`rounded-full px-2.5 py-1 text-[11px] font-medium ${IMPORTANCE_CLASS[current.importance]}`}
+            >
+              {IMPORTANCE_LABEL[current.importance]}
             </span>
-          </div>
-          <div className="flip-card-face flip-card-back absolute inset-0 flex flex-col items-center justify-center overflow-y-auto rounded-3xl border border-brand-500/30 bg-surface-2 p-8 text-center shadow-xl scrollbar-thin">
-            <span className="mb-3 shrink-0 rounded-full bg-white/5 px-2.5 py-1 text-[11px] font-medium uppercase tracking-wide text-muted">
-              Answer
+          )}
+        </div>
+        <p className="font-display text-lg font-semibold leading-snug text-ink">{current.front}</p>
+
+        <form
+          onSubmit={(e) => {
+            e.preventDefault()
+            if (!revealed) reveal()
+          }}
+        >
+          <textarea
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            disabled={revealed}
+            placeholder="Type what you remember, then check your answer…"
+            rows={3}
+            className="mt-5 w-full resize-none rounded-xl border border-white/10 bg-bg/60 p-3 text-sm text-ink placeholder:text-muted focus:border-brand-500 focus:outline-none disabled:opacity-70"
+          />
+          {!revealed && (
+            <button
+              type="submit"
+              className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-brand-500 py-3 text-sm font-semibold text-white transition hover:brightness-110"
+            >
+              <Send size={15} />
+              Check answer
+            </button>
+          )}
+        </form>
+
+        {revealed && (
+          <div className="mt-4 rounded-xl border border-brand-500/30 bg-surface-2 p-4">
+            <span className="mb-2 flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wide text-muted">
+              <Check size={13} /> Correct answer
             </span>
             <p className="font-display text-base font-medium leading-relaxed text-accent-400">{current.back}</p>
           </div>
-        </div>
+        )}
       </div>
 
-      {flipped ? (
+      {revealed ? (
         <div className="mt-6 grid grid-cols-4 gap-2">
           {GRADE_BUTTONS.map((b) => (
             <button
@@ -113,18 +140,14 @@ export default function FlashcardStudy({
           ))}
         </div>
       ) : (
-        <button
-          type="button"
-          onClick={() => setFlipped(true)}
-          className="mt-6 w-full rounded-xl bg-white/5 py-3 text-sm font-semibold text-ink transition hover:bg-white/10"
-        >
-          Show answer
-        </button>
+        <p className="mt-4 text-center text-xs text-muted">
+          Grade yourself honestly against the correct answer once it's revealed.
+        </p>
       )}
 
       <p className="mt-4 text-center text-xs text-muted">
         {queue.length} card{queue.length === 1 ? '' : 's'} left this session
-        {studyAhead && ' · studying ahead'}
+        {studyAhead && ' · practicing ahead'}
       </p>
     </div>
   )

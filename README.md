@@ -27,6 +27,10 @@ science has actually shown to work:
   your own words before a test.
 - **Focused work intervals** — a built-in Pomodoro timer (25 min focus / 5 min
   break) sits alongside every study set.
+- **Prioritized by importance** — AI-generated material is tagged core /
+  supporting / minor, with more cards built for core ideas and due-queues
+  studying them first, so time goes to what's actually central instead of
+  being spread evenly over everything.
 
 ## How content generation works
 
@@ -50,8 +54,12 @@ science has actually shown to work:
      `messages.parse` + a Zod schema) and asks it to explain *how the
      concepts work and connect*, then build "why/how/what-if" flashcards and
      scenario-based quiz questions that test understanding rather than
-     recall. Your key is stored only in this browser's local storage and is
-     never sent anywhere except directly to Anthropic.
+     recall. Every concept/card/question is tagged core, supporting, or
+     minor, answers are kept to one or two short sentences (a compound idea
+     is split into several small cards instead of one long one), and each
+     concept gets a short glossary-style definition for the matching game.
+     Your key is stored only in this browser's local storage and is never
+     sent anywhere except directly to Anthropic.
 3. **Scheduling** (`src/lib/srs.ts`) implements SM-2 for the flashcard review
    queue, regardless of which generation mode built the cards.
 
@@ -65,12 +73,15 @@ is sent to any Nuvio server, because there isn't one.
    `.pptx` file, on the home page.
 2. Hit **Generate study kit**. You'll land on the study set page with four
    tabs:
-   - **Overview** — due-card count, mastery breakdown, key terms, and a
-     focus timer.
-   - **Learn** — flip through due flashcards and grade your recall.
-   - **Quiz** — a mixed multiple-choice/true-false test with instant
-     feedback.
-   - **Summary** — the extractive key-points list for a quick review pass.
+   - **Overview** — due-card count, mastery breakdown, key concepts (with
+     importance tags), quiz history, and a focus timer.
+   - **Study** — *Flashcards* (flip and grade) or *Typed recall* (type the
+     answer from memory before it's revealed — active production, a
+     stronger retrieval signal than recognizing a flipped card).
+   - **Play** — *Quiz* (mixed multiple-choice/true-false with instant
+     feedback) or the *Matching game* (a timed grid: click a term, then its
+     definition, to pair them up — built for locking in vocabulary fast).
+   - **Summary** — the synthesized key-points list for a quick review pass.
 3. Come back later — the **Library** page tracks every set you've built and
    how many cards are due for review.
 

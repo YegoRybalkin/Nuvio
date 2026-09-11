@@ -73,6 +73,7 @@ export function generateStudySet(
     flashcards,
     quiz,
     quizAttempts: [],
+    matchAttempts: [],
   }
 }
 
