@@ -49,13 +49,19 @@ const QuestionTypeSchema = z.enum([
 // Course material analysis: topics, concepts, questions
 // ---------------------------------------------------------------------------
 
+// Length caps below are safety ceilings against runaway/degenerate output,
+// not formatting constraints - Claude doesn't reliably stay under a tight
+// character budget on prose fields, and zod's safeParse fails the ENTIRE
+// analysis (every topic/concept/question) if even one field runs over. A
+// generous ceiling here costs nothing; a tight one silently threw away
+// otherwise-good content and surfaced as a confusing validation error.
 const ConceptSchema = z.object({
-  name: z.string().max(70),
-  definition: z.string().max(300).describe('Plain-language definition/explanation of how it works'),
-  learningObjective: z.string().max(160).describe('What the student should be able to do with this concept'),
-  formula: z.string().max(160).optional().describe('Formula in plain text if this concept has one, else omit'),
-  examples: z.array(z.string().max(200)).max(3).describe('Concrete examples grounded in the material'),
-  misconceptions: z.array(z.string().max(200)).max(3).describe('Common misunderstandings students have about this'),
+  name: z.string().max(100),
+  definition: z.string().max(700).describe('Plain-language definition/explanation of how it works, kept concise'),
+  learningObjective: z.string().max(300).describe('What the student should be able to do with this concept, kept concise'),
+  formula: z.string().max(300).optional().describe('Formula in plain text if this concept has one, else omit'),
+  examples: z.array(z.string().max(400)).max(3).describe('Concrete examples grounded in the material, kept concise'),
+  misconceptions: z.array(z.string().max(400)).max(3).describe('Common misunderstandings students have about this, kept concise'),
   importance: ImportanceSchema,
 })
 
@@ -63,12 +69,12 @@ const QuestionSchema = z.object({
   conceptName: z.string().describe('Must exactly match one of the concept names provided'),
   type: QuestionTypeSchema,
   difficulty: DifficultySchema,
-  prompt: z.string().max(400),
-  choices: z.array(z.string().max(120)).length(4).optional().describe('Required only when type is mcq'),
+  prompt: z.string().max(700).describe('Kept concise'),
+  choices: z.array(z.string().max(200)).length(4).optional().describe('Required only when type is mcq'),
   correctIndex: z.number().int().min(0).max(3).optional().describe('Required only when type is mcq'),
   correctAnswer: z
     .string()
-    .max(700)
+    .max(1200)
     .describe(
       'Model answer. Keep it concise, but a full sentence or two is fine for open-ended types. For calculation questions, state the final numeric answer clearly (e.g. "42.5" or "$1,240").',
     ),
@@ -76,8 +82,8 @@ const QuestionSchema = z.object({
     .number()
     .optional()
     .describe('Required for calculation-type questions with a single numeric final answer; omit otherwise'),
-  rubric: z.array(z.string().max(160)).min(1).max(5).describe('Bullet points a grader checks the answer against'),
-  explanation: z.string().max(300).describe('Why the answer is correct, referencing the underlying concept'),
+  rubric: z.array(z.string().max(300)).min(1).max(5).describe('Bullet points a grader checks the answer against, kept concise'),
+  explanation: z.string().max(700).describe('Why the answer is correct, referencing the underlying concept, kept concise'),
 })
 
 const TopicSchema = z.object({
