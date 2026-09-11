@@ -153,10 +153,10 @@ matches one of the concepts you defined. Keep every prompt and answer concise an
 padded question.`
 
 // The full topics/concepts/question-bank schema can legitimately need well
-// over 16k output tokens (a real 1,800-word document already hit that
-// ceiling and got its JSON cut off mid-string). Streaming avoids the SDK's
-// non-streaming timeout risk at this size and lets the model actually finish.
-const ANALYSIS_MAX_TOKENS = 32000
+// over 16k output tokens - a real 1,800-word document hit both a 16k and a
+// 32k ceiling in testing and got its JSON cut off mid-string each time.
+// Streaming has no timeout concern at this size, so give it real headroom.
+const ANALYSIS_MAX_TOKENS = 64000
 
 export async function analyzeCourseMaterial(
   sourceText: string,
@@ -166,24 +166,21 @@ export async function analyzeCourseMaterial(
   const truncated = sourceText.length > MAX_INPUT_CHARS
   const text = truncated ? sourceText.slice(0, MAX_INPUT_CHARS) : sourceText
 
+  // Pass only {type, schema} - not the full zodOutputFormat() object with its
+  // .parse function - so the SDK does NOT auto-parse inside finalMessage().
+  // Auto-parsing throws on failure, and a truncated (max_tokens) response is
+  // exactly the case that fails to parse - which meant the stop_reason check
+  // below was previously unreachable for the one case it existed to catch.
+  // Parsing manually, after checking stop_reason, fixes that ordering.
+  const format = zodOutputFormat(CourseAnalysisSchema)
   const stream = client(settings).messages.stream({
     model: settings.model,
     max_tokens: ANALYSIS_MAX_TOKENS,
     system: `${BASE_SYSTEM_PROMPT}\n\n${subjectGuidance(subjectType)}`,
     messages: [{ role: 'user', content: `Course material:\n\n${text}` }],
-    output_config: { format: zodOutputFormat(CourseAnalysisSchema) },
+    output_config: { format: { type: 'json_schema', schema: format.schema } },
   })
-
-  let message: Awaited<ReturnType<typeof stream.finalMessage>>
-  try {
-    message = await stream.finalMessage()
-  } catch (e) {
-    const raw = e instanceof Error ? e.message : String(e)
-    if (raw.includes('Validation issues') || raw.includes('too_big') || raw.includes('too_small')) {
-      throw new Error("Claude's answer didn't quite fit the expected format this time - this usually succeeds on a retry. Try again, or use a shorter excerpt.")
-    }
-    throw e
-  }
+  const message = await stream.finalMessage()
 
   if (message.stop_reason === 'max_tokens') {
     throw new Error(
@@ -191,11 +188,16 @@ export async function analyzeCourseMaterial(
     )
   }
 
-  const parsed = message.parsed_output
-  if (!parsed) {
-    throw new Error('Claude did not return a parseable analysis. Try again, or use a shorter excerpt.')
+  const textBlock = message.content.find((b): b is Anthropic.TextBlock => b.type === 'text')
+  if (!textBlock) {
+    throw new Error('Claude did not return any content. Try again.')
   }
-  return { analysis: parsed, truncated }
+
+  try {
+    return { analysis: format.parse(textBlock.text), truncated }
+  } catch {
+    throw new Error("Claude's answer didn't quite fit the expected format this time - this usually succeeds on a retry. Try again, or use a shorter excerpt.")
+  }
 }
 
 // ---------------------------------------------------------------------------
