@@ -1,8 +1,8 @@
-import type { Flashcard, Grade, SrsState } from '../types'
+import type { Grade, SrsState } from '../types'
 
 // A standard SM-2 spaced-repetition scheduler (the algorithm behind Anki and
-// SuperMemo). Grading a card "good" or "easy" pushes its next review further
-// out; "again" resets it so it comes back the same session.
+// SuperMemo), used here to schedule concept review rather than flashcards
+// directly - see conceptSrs.ts for how a QuestionAttempt becomes a Grade.
 
 const MIN_EASE = 1.3
 
@@ -67,22 +67,4 @@ export function schedule(state: SrsState, grade: Grade, now = Date.now()): SrsSt
 
 export function dueCount(states: SrsState[], now = Date.now()): number {
   return states.filter((s) => isDue(s, now)).length
-}
-
-export function masteryLevel(state: SrsState): 'new' | 'learning' | 'young' | 'mature' {
-  if (state.repetitions === 0) return 'new'
-  if (state.intervalDays < 1) return 'learning'
-  if (state.intervalDays < 21) return 'young'
-  return 'mature'
-}
-
-export function flashcardStats(cards: Flashcard[]) {
-  const mastery = cards.reduce(
-    (acc, c) => {
-      acc[masteryLevel(c.srs)] += 1
-      return acc
-    },
-    { new: 0, learning: 0, young: 0, mature: 0 } as Record<string, number>,
-  )
-  return { due: dueCount(cards.map((c) => c.srs)), mastery }
 }

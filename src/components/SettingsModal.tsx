@@ -1,15 +1,22 @@
-import { Eye, EyeOff, KeyRound, X } from 'lucide-react'
+import { Database, Eye, EyeOff, KeyRound, X } from 'lucide-react'
 import { useState } from 'react'
-import { CLAUDE_MODELS } from '../lib/claude'
-import { useStudyStore } from '../store/useStudyStore'
+import { CLAUDE_MODELS } from '../lib/courseAi'
+import { buildDemoData } from '../lib/demoData'
+import { useCourseStore } from '../store/useCourseStore'
 
 export default function SettingsModal({ onClose }: { onClose: () => void }) {
-  const apiKey = useStudyStore((s) => s.claudeApiKey)
-  const model = useStudyStore((s) => s.claudeModel)
-  const setClaudeApiKey = useStudyStore((s) => s.setClaudeApiKey)
-  const setClaudeModel = useStudyStore((s) => s.setClaudeModel)
+  const apiKey = useCourseStore((s) => s.claudeApiKey)
+  const model = useCourseStore((s) => s.claudeModel)
+  const setClaudeApiKey = useCourseStore((s) => s.setClaudeApiKey)
+  const setClaudeModel = useCourseStore((s) => s.setClaudeModel)
+  const courses = useCourseStore((s) => s.courses)
+  const loadDemoData = useCourseStore((s) => s.loadDemoData)
+  const resetDemoData = useCourseStore((s) => s.resetDemoData)
+  const resetAllData = useCourseStore((s) => s.resetAllData)
   const [draftKey, setDraftKey] = useState(apiKey)
   const [showKey, setShowKey] = useState(false)
+
+  const hasDemoData = courses.some((c) => c.isDemo)
 
   const save = () => {
     setClaudeApiKey(draftKey)
@@ -22,7 +29,7 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
       onClick={onClose}
     >
       <div
-        className="w-full max-w-md rounded-2xl border border-white/10 bg-surface p-6"
+        className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-2xl border border-white/10 bg-surface p-6 scrollbar-thin"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-4 flex items-center justify-between">
@@ -36,9 +43,9 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
         </div>
 
         <p className="mb-4 text-sm leading-relaxed text-muted">
-          Add your own Anthropic API key to have Claude analyze your material for real conceptual
-          understanding — explanations of how ideas connect, "why/how" flashcards, and
-          scenario-based quiz questions — instead of the quick local keyword-based analysis.
+          Add your own Anthropic API key to have Claude analyze uploaded course material for real conceptual
+          understanding, generate a full question bank per concept, grade open-ended answers, and power the AI
+          tutor - instead of the quick local keyword-based fallback.
         </p>
 
         <label className="mb-1.5 block text-xs font-medium text-muted">Anthropic API key</label>
@@ -83,7 +90,7 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
 
         <p className="mb-5 text-xs text-muted">
           Your key stays only in this browser's local storage and is sent directly to Anthropic's
-          API when you generate a study kit — never to any other server. Get a key at{' '}
+          API - never to any other server. Get a key at{' '}
           <a
             href="https://console.anthropic.com/settings/keys"
             target="_blank"
@@ -95,7 +102,7 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
           . Leave it blank to keep using quick local analysis, no key needed.
         </p>
 
-        <div className="flex gap-2">
+        <div className="mb-5 flex gap-2">
           {apiKey && (
             <button
               type="button"
@@ -114,6 +121,44 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
             className="flex-1 rounded-xl bg-gradient-to-r from-brand-500 to-brand-600 px-4 py-2 text-sm font-semibold text-white transition hover:brightness-110"
           >
             Save
+          </button>
+        </div>
+
+        <div className="border-t border-white/10 pt-5">
+          <h3 className="mb-2 flex items-center gap-1.5 font-display text-sm font-semibold text-ink">
+            <Database size={15} className="text-muted" />
+            Demo data
+          </h3>
+          <p className="mb-3 text-xs text-muted">
+            Try the whole product instantly with realistic Sociology and Statistics courses (topics, concepts,
+            questions, past attempts, errors, and an upcoming exam each).
+          </p>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => loadDemoData(buildDemoData())}
+              className="flex-1 rounded-xl bg-white/5 px-3 py-2 text-xs font-semibold text-ink transition hover:bg-white/10"
+            >
+              Load demo data
+            </button>
+            {hasDemoData && (
+              <button
+                type="button"
+                onClick={() => resetDemoData()}
+                className="flex-1 rounded-xl bg-white/5 px-3 py-2 text-xs font-semibold text-ink transition hover:bg-white/10"
+              >
+                Remove demo data
+              </button>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              if (confirm('Delete ALL courses, progress, and settings? This cannot be undone.')) resetAllData()
+            }}
+            className="mt-3 w-full rounded-xl bg-danger-400/10 px-3 py-2 text-xs font-semibold text-danger-400 transition hover:bg-danger-400/20"
+          >
+            Reset all data
           </button>
         </div>
       </div>

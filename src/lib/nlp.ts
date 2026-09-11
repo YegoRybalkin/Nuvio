@@ -166,6 +166,26 @@ export function extractKeyTerms(
   return deduped
 }
 
+/** Splits raw text into ~targetSize-character chunks on sentence boundaries,
+ * for simple in-browser "RAG": each chunk becomes a retrievable/citable unit
+ * without needing an embeddings index. */
+export function chunkText(raw: string, targetSize = 1000): string[] {
+  const sentences = splitSentences(raw)
+  if (sentences.length === 0) return raw.trim() ? [raw.trim()] : []
+
+  const chunks: string[] = []
+  let current = ''
+  for (const s of sentences) {
+    if (current.length + s.text.length > targetSize && current) {
+      chunks.push(current.trim())
+      current = ''
+    }
+    current += `${s.text} `
+  }
+  if (current.trim()) chunks.push(current.trim())
+  return chunks
+}
+
 export interface DefinitionMatch {
   term: string
   definition: string

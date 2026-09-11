@@ -1,9 +1,9 @@
 import { Flame, Sparkles } from 'lucide-react'
-import { levelFromXp, useStudyStore } from '../store/useStudyStore'
+import { levelFromXp, useCourseStore } from '../store/useCourseStore'
 
 export default function XpBar() {
-  const xp = useStudyStore((s) => s.xp)
-  const streakDays = useStudyStore((s) => s.streakDays)
+  const xp = useCourseStore((s) => s.xp)
+  const streakDays = useCourseStore((s) => s.streakDays)
   const { level, xpIntoLevel, xpForNextLevel } = levelFromXp(xp)
   const pct = Math.min(100, Math.round((xpIntoLevel / xpForNextLevel) * 100))
 
