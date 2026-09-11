@@ -32,8 +32,9 @@ science has actually shown to work:
 There's no LLM call involved — everything runs client-side, instantly:
 
 1. **Extraction** (`src/lib/textExtract.ts`) pulls plain text out of pasted
-   text, `.txt`/`.md` files, PDFs (via `pdfjs-dist`), and `.pptx` slide decks
-   (by reading the slide XML directly with `jszip`).
+   text, `.txt`/`.md` files, PDFs (via `pdfjs-dist`), and `.docx`/`.pptx`
+   files (by reading the document/slide XML directly with `jszip` — no
+   server round-trip needed).
 2. **Analysis** (`src/lib/nlp.ts`) splits the text into sentences, scores
    word importance by frequency (a classic extractive-summarization signal),
    extracts candidate key terms, and detects explicit "Term: definition" /
@@ -53,8 +54,8 @@ device.
 
 ## Using it
 
-1. Paste your notes/reading, or upload a `.txt`, `.md`, `.pdf`, or `.pptx`
-   file, on the home page.
+1. Paste your notes/reading, or upload a `.txt`, `.md`, `.pdf`, `.docx`, or
+   `.pptx` file, on the home page.
 2. Hit **Generate study kit**. You'll land on the study set page with four
    tabs:
    - **Overview** — due-card count, mastery breakdown, key terms, and a

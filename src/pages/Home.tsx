@@ -35,7 +35,7 @@ export default function Home() {
       setFileName(file.name)
       if (!title) setTitle(file.name.replace(/\.[^.]+$/, ''))
     } catch {
-      setError('Something went wrong reading that file. Try a .txt, .md, .pdf, or .pptx file.')
+      setError('Something went wrong reading that file. Try a .txt, .md, .pdf, .docx, or .pptx file.')
     } finally {
       setIsParsing(false)
     }
@@ -104,7 +104,7 @@ export default function Home() {
               className="flex items-center gap-2 rounded-full border border-white/10 px-4 py-2 text-sm font-medium text-ink transition hover:border-brand-500/50 hover:text-brand-400"
             >
               {isParsing ? <Loader2 size={16} className="animate-spin" /> : <Upload size={16} />}
-              {fileName ?? 'Upload .txt, .md, .pdf, or .pptx'}
+              {fileName ?? 'Upload .txt, .md, .pdf, .docx, or .pptx'}
             </button>
             <span className={`text-xs ${canGenerate ? 'text-accent-400' : 'text-muted'}`}>
               {wordCount} words {canGenerate ? '· ready' : `· add ${MIN_WORDS - wordCount} more`}
@@ -114,7 +114,7 @@ export default function Home() {
           <input
             ref={fileInputRef}
             type="file"
-            accept=".txt,.md,.pdf,.pptx,.csv"
+            accept=".txt,.md,.pdf,.docx,.pptx,.csv"
             className="hidden"
             onChange={(e) => {
               const file = e.target.files?.[0]

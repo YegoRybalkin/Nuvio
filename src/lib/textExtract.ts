@@ -6,7 +6,8 @@ export interface ExtractedSource {
 }
 
 /** Pulls plain study text out of whatever a student throws at it: pasted
- * text, .txt/.md notes, PDF slide decks/readings, or PowerPoint exports. */
+ * text, .txt/.md notes, PDF slide decks/readings, Word documents, or
+ * PowerPoint exports. */
 export async function extractTextFromFile(file: File): Promise<ExtractedSource> {
   const name = file.name.toLowerCase()
 
@@ -15,6 +16,9 @@ export async function extractTextFromFile(file: File): Promise<ExtractedSource> 
   }
   if (name.endsWith('.pptx')) {
     return { fileName: file.name, text: await extractPptx(file) }
+  }
+  if (name.endsWith('.docx')) {
+    return { fileName: file.name, text: await extractDocx(file) }
   }
   if (name.endsWith('.txt') || name.endsWith('.md') || name.endsWith('.csv')) {
     return { fileName: file.name, text: await file.text() }
@@ -58,6 +62,30 @@ async function extractPptx(file: File): Promise<string> {
     slideTexts.push(textFromSlideXml(xml))
   }
   return slideTexts.join('\n\n')
+}
+
+async function extractDocx(file: File): Promise<string> {
+  const zip = await JSZip.loadAsync(file)
+  const documentXml = zip.file('word/document.xml')
+  if (!documentXml) return ''
+
+  const xml = await documentXml.async('text')
+  const paragraphs = [...xml.matchAll(/<w:p[ >][\s\S]*?<\/w:p>/g)]
+  return paragraphs
+    .map((p) => textFromParagraphXml(p[0]))
+    .filter(Boolean)
+    .join('\n')
+}
+
+/** Pulls the text inside <w:t> runs out of one Word paragraph's XML, treating
+ * <w:tab/> and <w:br/> as whitespace so runs don't get jammed together. */
+function textFromParagraphXml(xml: string): string {
+  const withBreaks = xml.replace(/<w:(?:tab|br|cr)\s*\/>/g, ' ')
+  const matches = [...withBreaks.matchAll(/<w:t[^>]*>([^<]*)<\/w:t>/g)]
+  return matches
+    .map((m) => decodeXmlEntities(m[1]))
+    .join('')
+    .trim()
 }
 
 function slideNumber(path: string): number {
