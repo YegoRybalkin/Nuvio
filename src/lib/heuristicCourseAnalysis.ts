@@ -7,6 +7,7 @@ import {
   buildFrequencyMap,
   extractDefinitions,
   extractKeyTerms,
+  looksTruncated,
   normalizeSpacing,
   splitSentences,
 } from './nlp'
@@ -61,7 +62,7 @@ export function analyzeCourseMaterialHeuristically(rawText: string): CourseAnaly
     const key = kt.term.toLowerCase()
     if (covered.has(key)) continue
     const sentence = sentences[kt.sentenceIndex]
-    if (!sentence) continue
+    if (!sentence || looksTruncated(sentence.text)) continue
     covered.add(key)
     concepts.push({
       name: kt.term,

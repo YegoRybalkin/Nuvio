@@ -198,6 +198,23 @@ const DEFINITION_PATTERNS: RegExp[] = [
   /^(?:The term\s+)?([A-Z][\w -]{2,40}?)\s+(?:is|are)\s+(a|an|the)\s+(.{10,220})$/,
 ]
 
+// Words a genuine definition should never trail off on. A match ending on one
+// of these is a sign the source line wrapped or got cut mid-thought (common
+// when a PDF/slide bullet spans two lines) rather than a real, complete
+// definition - better to drop it than surface a broken fragment as an answer.
+const DANGLING_END_WORDS = new Set(
+  `a an the in on at by for with and or but of to from as that which who
+  whom into onto than then so if because while when where`
+    .split(/\s+/)
+    .filter(Boolean),
+)
+
+export function looksTruncated(text: string): boolean {
+  const words = text.trim().split(/\s+/)
+  const last = words[words.length - 1]?.toLowerCase().replace(/[.,!?;:]+$/, '')
+  return !last || DANGLING_END_WORDS.has(last)
+}
+
 /** Finds explicit "Term: definition" / "Term is a ..." patterns, which make
  * much higher quality flashcards than generic cloze deletion when present
  * (common in glossary slides and textbook call-out boxes). */
@@ -209,7 +226,7 @@ export function extractDefinitions(sentences: Sentence[]): DefinitionMatch[] {
       if (m) {
         const term = m[1].trim()
         const rest = m.length > 3 ? `${m[2]} ${m[3]}`.trim() : m[2].trim()
-        if (term.split(/\s+/).length <= 6 && rest.length > 8) {
+        if (term.split(/\s+/).length <= 6 && rest.length > 8 && !looksTruncated(rest)) {
           found.push({ term, definition: normalizeSpacing(rest) })
         }
         break
