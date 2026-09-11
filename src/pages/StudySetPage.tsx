@@ -34,7 +34,18 @@ export default function StudySetPage() {
   return (
     <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
       <div className="mb-6">
-        <h1 className="font-display text-2xl font-bold text-ink sm:text-3xl">{studySet.title}</h1>
+        <div className="flex flex-wrap items-center gap-2">
+          <h1 className="font-display text-2xl font-bold text-ink sm:text-3xl">{studySet.title}</h1>
+          <span
+            className={`rounded-full px-2.5 py-1 text-[11px] font-medium ${
+              studySet.generationMode === 'ai'
+                ? 'bg-brand-500/15 text-brand-400'
+                : 'bg-white/5 text-muted'
+            }`}
+          >
+            {studySet.generationMode === 'ai' ? 'AI concept analysis' : 'Quick local analysis'}
+          </span>
+        </div>
         <p className="mt-1 text-sm text-muted">
           {studySet.flashcards.length} cards · {studySet.quiz.length} quiz questions ·{' '}
           {studySet.sourceWordCount.toLocaleString()} words analyzed
@@ -67,19 +78,36 @@ export default function StudySetPage() {
               <StatCard label="Mastered" value={stats.mastery.mature} accent="text-brand-400" />
             </div>
 
-            <div className="rounded-2xl border border-white/10 bg-surface p-5">
-              <h3 className="mb-3 font-display text-sm font-semibold text-ink">Key terms</h3>
-              <div className="flex flex-wrap gap-2">
-                {studySet.terms.slice(0, 20).map((term) => (
-                  <span
-                    key={term}
-                    className="rounded-full bg-white/5 px-3 py-1 text-xs font-medium text-muted"
-                  >
-                    {term}
-                  </span>
-                ))}
+            {studySet.concepts && studySet.concepts.length > 0 ? (
+              <div className="rounded-2xl border border-white/10 bg-surface p-5">
+                <h3 className="mb-3 font-display text-sm font-semibold text-ink">Key concepts</h3>
+                <div className="space-y-4">
+                  {studySet.concepts.map((concept) => (
+                    <div key={concept.name} className="border-b border-white/5 pb-4 last:border-0 last:pb-0">
+                      <p className="font-display text-sm font-semibold text-ink">{concept.name}</p>
+                      <p className="mt-1 text-sm leading-relaxed text-muted">{concept.explanation}</p>
+                      <p className="mt-1.5 text-xs leading-relaxed text-brand-400">
+                        Why it matters: {concept.whyItMatters}
+                      </p>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
+            ) : (
+              <div className="rounded-2xl border border-white/10 bg-surface p-5">
+                <h3 className="mb-3 font-display text-sm font-semibold text-ink">Key terms</h3>
+                <div className="flex flex-wrap gap-2">
+                  {studySet.terms.slice(0, 20).map((term) => (
+                    <span
+                      key={term}
+                      className="rounded-full bg-white/5 px-3 py-1 text-xs font-medium text-muted"
+                    >
+                      {term}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {studySet.quizAttempts.length > 0 && (
               <div className="rounded-2xl border border-white/10 bg-surface p-5">

@@ -40,12 +40,27 @@ async function extractPdf(file: File): Promise<string> {
 
   const pages: string[] = []
   for (let i = 1; i <= doc.numPages; i++) {
-    const page = await doc.getPage(i)
-    const content = await page.getTextContent()
-    const strings = content.items.map((item) =>
-      'str' in item ? item.str : '',
-    )
-    pages.push(strings.join(' '))
+    try {
+      const page = await doc.getPage(i)
+      const content = await page.getTextContent()
+      // Insert a line break after items pdf.js marks as ending a line, so
+      // sentence/paragraph structure survives instead of one run-on string.
+      let pageText = ''
+      for (const item of content.items) {
+        if (!('str' in item)) continue
+        pageText += item.str
+        pageText += item.hasEOL ? '\n' : ' '
+      }
+      pages.push(pageText)
+    } catch (pageError) {
+      // One malformed/corrupt page shouldn't blank out an otherwise-readable
+      // document - skip it and keep extracting the rest.
+      console.warn(`Skipping unreadable PDF page ${i}:`, pageError)
+    }
+  }
+
+  if (pages.length === 0) {
+    throw new Error('No readable pages found in this PDF (it may be scanned/image-only).')
   }
   return pages.join('\n\n')
 }

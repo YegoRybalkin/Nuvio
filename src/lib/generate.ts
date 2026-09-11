@@ -67,6 +67,7 @@ export function generateStudySet(
     createdAt: Date.now(),
     sourceFileName,
     sourceWordCount: rawText.split(/\s+/).filter(Boolean).length,
+    generationMode: 'heuristic',
     summary,
     terms: keyTerms.map((t) => t.term),
     flashcards,

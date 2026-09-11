@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
+import { DEFAULT_CLAUDE_MODEL } from '../lib/claude'
 import { schedule } from '../lib/srs'
 import type { Grade, QuizAttempt, StudySet } from '../types'
 
@@ -18,7 +19,12 @@ interface GamificationState {
   bestStreak: number
 }
 
-interface StudyStore extends GamificationState {
+interface AiSettingsState {
+  claudeApiKey: string
+  claudeModel: string
+}
+
+interface StudyStore extends GamificationState, AiSettingsState {
   studySets: StudySet[]
   addStudySet: (set: StudySet) => void
   removeStudySet: (id: string) => void
@@ -26,6 +32,8 @@ interface StudyStore extends GamificationState {
   gradeFlashcard: (setId: string, cardId: string, grade: Grade) => void
   recordQuizAttempt: (setId: string, attempt: QuizAttempt, xpEarned: number) => void
   addXp: (amount: number) => void
+  setClaudeApiKey: (key: string) => void
+  setClaudeModel: (model: string) => void
 }
 
 type StreakFields = Pick<GamificationState, 'streakDays' | 'lastActiveDay' | 'bestStreak'>
@@ -51,6 +59,8 @@ export const useStudyStore = create<StudyStore>()(
       streakDays: 0,
       lastActiveDay: null,
       bestStreak: 0,
+      claudeApiKey: '',
+      claudeModel: DEFAULT_CLAUDE_MODEL,
 
       addStudySet: (studySet) =>
         set((state) => ({
@@ -94,6 +104,9 @@ export const useStudyStore = create<StudyStore>()(
         })),
 
       addXp: (amount) => set((state) => ({ xp: state.xp + amount })),
+
+      setClaudeApiKey: (key) => set({ claudeApiKey: key.trim() }),
+      setClaudeModel: (model) => set({ claudeModel: model }),
     }),
     { name: 'nuvio-study-store' },
   ),

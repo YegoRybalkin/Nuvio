@@ -34,14 +34,24 @@ export interface QuizAttempt {
   total: number
 }
 
+export interface Concept {
+  name: string
+  explanation: string
+  whyItMatters: string
+}
+
+export type GenerationMode = 'ai' | 'heuristic'
+
 export interface StudySet {
   id: string
   title: string
   createdAt: number
   sourceFileName?: string
   sourceWordCount: number
+  generationMode: GenerationMode
   summary: string[]
   terms: string[]
+  concepts?: Concept[]
   flashcards: Flashcard[]
   quiz: QuizQuestion[]
   quizAttempts: QuizAttempt[]

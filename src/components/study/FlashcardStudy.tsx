@@ -70,20 +70,20 @@ export default function FlashcardStudy({
         onClick={() => setFlipped((f) => !f)}
       >
         <div className="flip-card-inner relative h-full w-full">
-          <div className="flip-card-face absolute inset-0 flex flex-col items-center justify-center rounded-3xl border border-white/10 bg-surface p-8 text-center shadow-xl">
-            <span className="mb-3 rounded-full bg-white/5 px-2.5 py-1 text-[11px] font-medium uppercase tracking-wide text-muted">
-              {current.cloze ? 'Fill in the blank' : 'Term'}
+          <div className="flip-card-face absolute inset-0 flex flex-col items-center justify-center overflow-y-auto rounded-3xl border border-white/10 bg-surface p-8 text-center shadow-xl scrollbar-thin">
+            <span className="mb-3 shrink-0 rounded-full bg-white/5 px-2.5 py-1 text-[11px] font-medium uppercase tracking-wide text-muted">
+              {current.cloze ? 'Fill in the blank' : 'Question'}
             </span>
-            <p className="font-display text-xl font-semibold leading-snug text-ink">{current.front}</p>
-            <span className="mt-6 flex items-center gap-1.5 text-xs text-muted">
+            <p className="font-display text-lg font-semibold leading-snug text-ink">{current.front}</p>
+            <span className="mt-6 flex shrink-0 items-center gap-1.5 text-xs text-muted">
               <RotateCw size={13} /> Tap to reveal
             </span>
           </div>
-          <div className="flip-card-face flip-card-back absolute inset-0 flex flex-col items-center justify-center rounded-3xl border border-brand-500/30 bg-surface-2 p-8 text-center shadow-xl">
-            <span className="mb-3 rounded-full bg-white/5 px-2.5 py-1 text-[11px] font-medium uppercase tracking-wide text-muted">
-              {current.cloze ? 'Answer' : 'Definition'}
+          <div className="flip-card-face flip-card-back absolute inset-0 flex flex-col items-center justify-center overflow-y-auto rounded-3xl border border-brand-500/30 bg-surface-2 p-8 text-center shadow-xl scrollbar-thin">
+            <span className="mb-3 shrink-0 rounded-full bg-white/5 px-2.5 py-1 text-[11px] font-medium uppercase tracking-wide text-muted">
+              Answer
             </span>
-            <p className="font-display text-xl font-semibold leading-snug text-accent-400">{current.back}</p>
+            <p className="font-display text-base font-medium leading-relaxed text-accent-400">{current.back}</p>
           </div>
         </div>
       </div>

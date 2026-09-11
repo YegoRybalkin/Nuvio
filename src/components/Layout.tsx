@@ -1,10 +1,13 @@
-import { Library as LibraryIcon, Sparkles } from 'lucide-react'
+import { Library as LibraryIcon, Settings, Sparkles } from 'lucide-react'
+import { useState } from 'react'
 import { Link, Outlet, useLocation } from 'react-router-dom'
+import SettingsModal from './SettingsModal'
 import XpBar from './XpBar'
 
 export default function Layout() {
   const location = useLocation()
   const isHome = location.pathname === '/'
+  const [settingsOpen, setSettingsOpen] = useState(false)
 
   return (
     <div className="flex min-h-svh flex-col bg-bg text-ink">
@@ -27,6 +30,14 @@ export default function Layout() {
                 <span className="hidden sm:inline">Library</span>
               </Link>
             )}
+            <button
+              type="button"
+              onClick={() => setSettingsOpen(true)}
+              aria-label="Settings"
+              className="rounded-full border border-white/10 p-2 text-muted transition hover:border-white/20 hover:text-ink"
+            >
+              <Settings size={16} />
+            </button>
           </div>
         </div>
       </header>
@@ -36,6 +47,7 @@ export default function Layout() {
       <footer className="border-t border-white/5 py-6 text-center text-xs text-muted">
         Built on learning science: active recall · spaced repetition · interleaving.
       </footer>
+      {settingsOpen && <SettingsModal onClose={() => setSettingsOpen(false)} />}
     </div>
   )
 }

@@ -1,8 +1,9 @@
 # Nuvio
 
 Turn any slide deck, reading, or set of notes into an interactive study kit —
-flashcards, a quiz, and a spaced-repetition schedule — generated instantly in
-the browser, no AI API key required.
+flashcards, a quiz, and a spaced-repetition schedule. Works instantly in the
+browser with no API key, or, with your own Anthropic API key, uses Claude to
+build real conceptual understanding instead of keyword-based extraction.
 
 ## Why it's built this way
 
@@ -29,28 +30,34 @@ science has actually shown to work:
 
 ## How content generation works
 
-There's no LLM call involved — everything runs client-side, instantly:
-
 1. **Extraction** (`src/lib/textExtract.ts`) pulls plain text out of pasted
-   text, `.txt`/`.md` files, PDFs (via `pdfjs-dist`), and `.docx`/`.pptx`
+   text, `.txt`/`.md` files, PDFs (via `pdfjs-dist`, page-by-page so one
+   corrupt page doesn't blank out the whole document), and `.docx`/`.pptx`
    files (by reading the document/slide XML directly with `jszip` — no
-   server round-trip needed).
-2. **Analysis** (`src/lib/nlp.ts`) splits the text into sentences, scores
-   word importance by frequency (a classic extractive-summarization signal),
-   extracts candidate key terms, and detects explicit "Term: definition" /
-   "Term is defined as ..." patterns common in glossaries and lecture slides.
-3. **Generation** (`src/lib/generate.ts`) turns that analysis into:
-   - Flashcards — real definitions where the source stated them explicitly,
-     cloze ("fill in the blank") cards for other key terms.
-   - A multiple-choice + true/false quiz with distractors pulled from other
-     terms/definitions in the same set.
-   - An extractive summary of the most important sentences.
-4. **Scheduling** (`src/lib/srs.ts`) implements SM-2 for the flashcard review
-   queue.
+   server round-trip needed). The raw extracted text is never shown back to
+   you — only the generated study kit is.
+2. **Generation** — two modes, picked automatically based on whether you've
+   added an API key (Settings → gear icon):
+   - **Quick local analysis** (`src/lib/nlp.ts` + `src/lib/generate.ts`, the
+     default, no key needed): scores word importance by frequency, extracts
+     candidate key terms, and detects explicit "Term: definition" patterns,
+     then builds definition/cloze flashcards, an MCQ+true/false quiz, and an
+     extractive summary of the most important sentences. Runs instantly,
+     entirely client-side.
+   - **AI concept analysis** (`src/lib/claude.ts`, requires your own
+     Anthropic API key): sends the extracted text directly from your browser
+     to the Claude API (`@anthropic-ai/sdk`, structured output via
+     `messages.parse` + a Zod schema) and asks it to explain *how the
+     concepts work and connect*, then build "why/how/what-if" flashcards and
+     scenario-based quiz questions that test understanding rather than
+     recall. Your key is stored only in this browser's local storage and is
+     never sent anywhere except directly to Anthropic.
+3. **Scheduling** (`src/lib/srs.ts`) implements SM-2 for the flashcard review
+   queue, regardless of which generation mode built the cards.
 
-Everything is stored locally in the browser (`localStorage` via Zustand's
-`persist` middleware) — your study sets, XP, and streak all stay on your
-device.
+Everything (study sets, XP, streak, and your API key if you add one) is
+stored locally in the browser via Zustand's `persist` middleware — nothing
+is sent to any Nuvio server, because there isn't one.
 
 ## Using it
 
@@ -76,5 +83,5 @@ npm run build     # type-check + production build
 npm run lint       # oxlint
 ```
 
-Built with React, TypeScript, Vite, Tailwind CSS v4, Zustand, and Framer
-Motion.
+Built with React, TypeScript, Vite, Tailwind CSS v4, Zustand, Framer Motion,
+and (optionally, for AI concept analysis) the Anthropic TypeScript SDK.
