@@ -68,8 +68,10 @@ const QuestionSchema = z.object({
   correctIndex: z.number().int().min(0).max(3).optional().describe('Required only when type is mcq'),
   correctAnswer: z
     .string()
-    .max(400)
-    .describe('Model answer. For calculation questions, state the final numeric answer clearly (e.g. "42.5" or "$1,240").'),
+    .max(700)
+    .describe(
+      'Model answer. Keep it concise, but a full sentence or two is fine for open-ended types. For calculation questions, state the final numeric answer clearly (e.g. "42.5" or "$1,240").',
+    ),
   numericAnswer: z
     .number()
     .optional()
@@ -165,7 +167,17 @@ export async function analyzeCourseMaterial(
     messages: [{ role: 'user', content: `Course material:\n\n${text}` }],
     output_config: { format: zodOutputFormat(CourseAnalysisSchema) },
   })
-  const message = await stream.finalMessage()
+
+  let message: Awaited<ReturnType<typeof stream.finalMessage>>
+  try {
+    message = await stream.finalMessage()
+  } catch (e) {
+    const raw = e instanceof Error ? e.message : String(e)
+    if (raw.includes('Validation issues') || raw.includes('too_big') || raw.includes('too_small')) {
+      throw new Error("Claude's answer didn't quite fit the expected format this time - this usually succeeds on a retry. Try again, or use a shorter excerpt.")
+    }
+    throw e
+  }
 
   if (message.stop_reason === 'max_tokens') {
     throw new Error(
