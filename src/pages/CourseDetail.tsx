@@ -13,6 +13,7 @@ import {
 import { useMemo, useRef, useState } from 'react'
 import { Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import QuestionQueueRunner from '../components/QuestionQueueRunner'
+import SettingsModal from '../components/SettingsModal'
 import { ERROR_CATEGORY_LABEL } from '../lib/errorLog'
 import { IMPORTANCE_CLASS, IMPORTANCE_LABEL } from '../lib/importance'
 import { useMaterialIngestion } from '../lib/useMaterialIngestion'
@@ -62,6 +63,8 @@ export default function CourseDetail() {
 
   const [practiceScope, setPracticeScope] = useState<string | 'all'>('all')
   const [examForm, setExamForm] = useState(false)
+  const [settingsOpen, setSettingsOpen] = useState(false)
+  const claudeApiKey = useCourseStore((s) => s.claudeApiKey)
 
   const fallbackCourse = useMemo(
     () => ({ id: '', name: '', subjectType: 'generic' as const, createdAt: 0, materialIds: [], topicIds: [], examIds: [] }),
@@ -172,16 +175,28 @@ export default function CourseDetail() {
 
       {tab === 'materials' && (
         <div className="space-y-3">
+          {!claudeApiKey && (
+            <div className="flex items-center justify-between gap-3 rounded-2xl border border-brand-500/30 bg-brand-500/10 px-4 py-3 text-sm text-ink">
+              <span>Add your Anthropic API key to analyze material - Nuvio needs it to understand your material and write real questions.</span>
+              <button
+                type="button"
+                onClick={() => setSettingsOpen(true)}
+                className="shrink-0 rounded-full bg-brand-500 px-3 py-1.5 text-xs font-medium text-white hover:bg-brand-400"
+              >
+                Add key
+              </button>
+            </div>
+          )}
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
-            disabled={ingestion.stage === 'extracting' || ingestion.stage === 'analyzing'}
+            disabled={!claudeApiKey || ingestion.stage === 'extracting' || ingestion.stage === 'analyzing'}
             className="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-white/10 bg-surface py-8 text-sm font-medium text-muted transition hover:border-brand-500/50 hover:text-ink disabled:opacity-60"
           >
             {ingestion.stage === 'extracting' || ingestion.stage === 'analyzing' ? (
               <>
                 <Loader2 size={18} className="animate-spin" />
-                {ingestion.stage === 'extracting' ? 'Reading file…' : `Analyzing (${ingestion.usingAi ? 'AI' : 'quick local'})…`}
+                {ingestion.stage === 'extracting' ? 'Reading file…' : 'Analyzing with AI…'}
               </>
             ) : (
               <>
@@ -363,6 +378,8 @@ export default function CourseDetail() {
           removeExam={removeExam}
         />
       )}
+
+      {settingsOpen && <SettingsModal onClose={() => setSettingsOpen(false)} />}
     </div>
   )
 }

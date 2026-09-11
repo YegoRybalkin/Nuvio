@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { analyzeCourseMaterial } from './courseAi'
 import { materializeAnalysis } from './courseIngestion'
-import { analyzeCourseMaterialHeuristically } from './heuristicCourseAnalysis'
 import { chunkText } from './nlp'
 import { extractTextFromFile } from './textExtract'
 import { useCourseStore } from '../store/useCourseStore'
@@ -16,7 +15,10 @@ export type IngestionStage = 'idle' | 'extracting' | 'analyzing' | 'done' | 'err
  * for a single piece of course material, used both when creating a course
  * from material and when adding material to an existing course. Runs
  * asynchronously and reports a stage so the UI can show clear processing
- * states rather than blocking. */
+ * states rather than blocking. Requires a Claude API key: real conceptual
+ * understanding and question generation needs a model, and a keyword-based
+ * fallback produced answers lifted verbatim from the source text (including
+ * fragments truncated mid-sentence) rather than real understanding. */
 export function useMaterialIngestion(course: Course) {
   const addMaterialPlaceholder = useCourseStore((s) => s.addMaterialPlaceholder)
   const markMaterialFailed = useCourseStore((s) => s.markMaterialFailed)
@@ -30,6 +32,11 @@ export function useMaterialIngestion(course: Course) {
 
   const ingestText = async (fileName: string, rawText: string) => {
     setError(null)
+    if (!claudeApiKey) {
+      setError('Add your Anthropic API key in Settings to analyze material - Nuvio needs it to understand your material and write real questions.')
+      setStage('error')
+      return
+    }
     const wordCount = rawText.trim() ? rawText.trim().split(/\s+/).length : 0
     if (wordCount < MIN_WORDS) {
       setError(`That material is too short to analyze (${wordCount} words, need at least ${MIN_WORDS}).`)
@@ -48,9 +55,7 @@ export function useMaterialIngestion(course: Course) {
         text,
       }))
 
-      const analysis = claudeApiKey
-        ? (await analyzeCourseMaterial(rawText, course.subjectType, { apiKey: claudeApiKey, model: claudeModel })).analysis
-        : analyzeCourseMaterialHeuristically(rawText)
+      const { analysis } = await analyzeCourseMaterial(rawText, course.subjectType, { apiKey: claudeApiKey, model: claudeModel })
 
       const materialized = materializeAnalysis(course.id, analysis, chunks)
       ingestMaterial(material.id, chunks, materialized)

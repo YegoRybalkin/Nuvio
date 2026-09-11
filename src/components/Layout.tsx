@@ -33,15 +33,29 @@ export default function Layout() {
   return (
     <div className="flex min-h-svh flex-col bg-bg text-ink">
       <header className="sticky top-0 z-30 border-b border-white/5 bg-bg/80 backdrop-blur-md">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
-          <Link to="/" className="flex shrink-0 items-center gap-2 font-display text-lg font-bold text-ink">
-            <span className="grid h-8 w-8 place-items-center rounded-xl bg-gradient-to-br from-brand-500 to-accent-500 text-white">
-              <Sparkles size={18} />
-            </span>
-            <span className="hidden sm:inline">Nuvio</span>
-          </Link>
+        <div className="mx-auto max-w-6xl px-4 py-2.5 sm:px-6">
+          <div className="flex items-center justify-between gap-4">
+            <Link to="/" className="flex shrink-0 items-center gap-2 font-display text-lg font-bold text-ink">
+              <span className="grid h-8 w-8 place-items-center rounded-xl bg-gradient-to-br from-brand-500 to-accent-500 text-white">
+                <Sparkles size={18} />
+              </span>
+              <span className="hidden sm:inline">Nuvio</span>
+            </Link>
 
-          <nav className="flex min-w-0 flex-1 items-center gap-0.5 overflow-x-auto scrollbar-thin sm:gap-1">
+            <div className="flex shrink-0 items-center gap-2">
+              <XpBar />
+              <button
+                type="button"
+                onClick={() => setSettingsOpen(true)}
+                aria-label="Settings"
+                className="rounded-full border border-white/10 p-2 text-muted transition hover:border-white/20 hover:text-ink"
+              >
+                <Settings size={16} />
+              </button>
+            </div>
+          </div>
+
+          <nav className="mt-2 flex flex-wrap items-center justify-center gap-1">
             {NAV.map((item) => {
               const active = item.to === '/' ? location.pathname === '/' : location.pathname.startsWith(item.to)
               return (
@@ -53,23 +67,11 @@ export default function Layout() {
                   }`}
                 >
                   <item.icon size={15} />
-                  <span className="hidden md:inline">{item.label}</span>
+                  <span className="hidden sm:inline">{item.label}</span>
                 </Link>
               )
             })}
           </nav>
-
-          <div className="flex shrink-0 items-center gap-2">
-            <XpBar />
-            <button
-              type="button"
-              onClick={() => setSettingsOpen(true)}
-              aria-label="Settings"
-              className="rounded-full border border-white/10 p-2 text-muted transition hover:border-white/20 hover:text-ink"
-            >
-              <Settings size={16} />
-            </button>
-          </div>
         </div>
       </header>
       <main className="flex-1">

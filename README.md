@@ -13,9 +13,11 @@ retrieval practice, and application, get graded (AI or deterministic), and
 the system tracks per-concept mastery, spaced review, and errors — then
 composes your next study session, mock exam, or game for you.
 
-Works instantly with no API key (quick local analysis); with your own
-Anthropic API key it uses Claude for real conceptual understanding, question
-generation, grading, and an AI tutor.
+Requires your own Anthropic API key to analyze material — real conceptual
+understanding and question generation needs a model; an early keyword-based
+fallback produced concepts and questions lifted verbatim from the source
+text, which was low quality and has been removed. **Demo data** (see below)
+still lets you try every study/practice/game feature without a key.
 
 ## The learning loop
 
@@ -37,9 +39,10 @@ Open the app, then either:
   courses (Sociology, Statistics) with topics, concepts, a question bank,
   realistic past attempts, an error log, and one upcoming exam each, so you
   can try every feature (dashboard, practice, sessions, all 9 game modes,
-  mock exams, progress) without uploading anything.
-- Or **create a course** (Courses → New course), pick a subject type, and
-  upload a `.txt`/`.md`/`.pdf`/`.docx`/`.pptx` file.
+  mock exams, progress) without uploading anything or needing an API key.
+- Or **create a course** (Courses → New course), add your Anthropic API key
+  in Settings, pick a subject type, and upload a
+  `.txt`/`.md`/`.pdf`/`.docx`/`.pptx` file.
 
 ## Architecture
 
@@ -56,25 +59,24 @@ immediately-runnable prototype; see **Known simplifications** below.
 append-only — mastery is always recomputed from the full history, never
 overwritten in place.
 
-### Content generation (`src/lib/courseAi.ts`, `src/lib/heuristicCourseAnalysis.ts`)
+### Content generation (`src/lib/courseAi.ts`)
 
-- **With an API key**: `analyzeCourseMaterial` sends the extracted text to
-  Claude with a subject-aware system prompt (theory-heavy / quantitative /
-  economics / accounting each get a different question-generation strategy
-  per the spec's flows) and a Zod-validated structured-output schema —
-  topics, concepts (definition, learning objective, formula, examples,
-  misconceptions, importance), and a question bank tagged with type,
-  difficulty (1–5: Recall/Understanding/Application/Analysis/Transfer), a
-  grading rubric, and — for calculation questions — an exact numeric answer.
-- **Without a key**: `heuristicCourseAnalysis.ts` reuses the existing
-  extractive-NLP engine (word-frequency scoring, definition-pattern
-  detection) to build concepts and definition/mcq questions. It **cannot**
-  generate real calculation problems from arbitrary prose — this is the one
-  feature that meaningfully needs the AI path, and is called out in the UI.
-- `courseIngestion.ts` resolves generated content back to concrete IDs and
-  attaches a best-effort source reference (keyword-overlap chunk matching —
-  see Known simplifications) so generated material can be traced to the
-  source it came from.
+`analyzeCourseMaterial` sends the extracted text to Claude with a
+subject-aware system prompt (theory-heavy / quantitative / economics /
+accounting each get a different question-generation strategy per the spec's
+flows) and a Zod-validated structured-output schema — topics, concepts
+(definition, learning objective, formula, examples, misconceptions,
+importance), and a question bank tagged with type, difficulty (1–5:
+Recall/Understanding/Application/Analysis/Transfer), a grading rubric, and —
+for calculation questions — an exact numeric answer. An Anthropic API key is
+required to process material (Settings → API key): an earlier no-key
+fallback lifted phrases directly out of the source text via regex, which
+could surface ungrammatical, mid-sentence fragments as "definitions" and
+gave no way to generate real calculation problems — it's been removed in
+favor of requiring the real thing. `courseIngestion.ts` resolves generated
+content back to concrete IDs and attaches a best-effort source reference
+(keyword-overlap chunk matching — see Known simplifications) so generated
+material can be traced to the source it came from.
 
 ### Grading (`src/lib/attemptGrading.ts`)
 
@@ -141,8 +143,11 @@ limitations clearly rather than hide them:
 - **Mock exams draw from the existing question bank** rather than always
   generating fresh questions, so they're instant and don't cost API calls;
   quality is bounded by how good the underlying bank is.
-- **No-key heuristic mode can't generate calculation questions** from
-  arbitrary text — quantitative subjects need an API key for that part.
+- **Grading still has a keyword-overlap fallback** (`heuristicRubricGrade` in
+  `attemptGrading.ts`) for open-ended answers if an AI grading call fails at
+  runtime, or while practicing demo-data questions with no key set — it's
+  honest about being heuristic (never labeled `gradedBy: 'ai'`), but it's
+  cruder than real grading, same as before.
 - **Case Detective** re-frames a topic's scenario/comparison questions as an
   investigation; it doesn't have a bespoke branching-narrative data model.
 - A few display-only date/random calculations run during render rather than
@@ -162,10 +167,10 @@ The test suite already earned its keep once: it caught a duplicate-question
 bug and a segment-priority bug in the session generator before this shipped.
 
 Manually verified end-to-end in a real browser: course creation, demo data,
-material upload/processing, practice grading (AI-key and heuristic paths),
-mastery/error tracking, adaptive session generation, exam creation, a full
-timed mock exam, every game mode, the AI tutor (with and without a key), and
-state persistence across a full page reload.
+material upload/processing (AI, with the upload flow gated behind an API
+key), practice grading, mastery/error tracking, adaptive session generation,
+exam creation, a full timed mock exam, every game mode, the AI tutor (with
+and without a key), and state persistence across a full page reload.
 
 ## Development
 
