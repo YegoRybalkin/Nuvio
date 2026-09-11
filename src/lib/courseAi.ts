@@ -144,6 +144,12 @@ questions, for "core" concepts than for "minor" ones. Every question must refere
 matches one of the concepts you defined. Keep every prompt and answer concise and specific - never a vague or
 padded question.`
 
+// The full topics/concepts/question-bank schema can legitimately need well
+// over 16k output tokens (a real 1,800-word document already hit that
+// ceiling and got its JSON cut off mid-string). Streaming avoids the SDK's
+// non-streaming timeout risk at this size and lets the model actually finish.
+const ANALYSIS_MAX_TOKENS = 32000
+
 export async function analyzeCourseMaterial(
   sourceText: string,
   subjectType: SubjectType,
@@ -152,17 +158,24 @@ export async function analyzeCourseMaterial(
   const truncated = sourceText.length > MAX_INPUT_CHARS
   const text = truncated ? sourceText.slice(0, MAX_INPUT_CHARS) : sourceText
 
-  const response = await client(settings).messages.parse({
+  const stream = client(settings).messages.stream({
     model: settings.model,
-    max_tokens: 16000,
+    max_tokens: ANALYSIS_MAX_TOKENS,
     system: `${BASE_SYSTEM_PROMPT}\n\n${subjectGuidance(subjectType)}`,
     messages: [{ role: 'user', content: `Course material:\n\n${text}` }],
     output_config: { format: zodOutputFormat(CourseAnalysisSchema) },
   })
+  const message = await stream.finalMessage()
 
-  const parsed = response.parsed_output
+  if (message.stop_reason === 'max_tokens') {
+    throw new Error(
+      "Claude's response was cut off before finishing - this material produced more content than fits in one generation pass. Try a shorter excerpt, or split the material into smaller uploads.",
+    )
+  }
+
+  const parsed = message.parsed_output
   if (!parsed) {
-    throw new Error('Claude did not return a parseable analysis. Try again, or use quick local analysis.')
+    throw new Error('Claude did not return a parseable analysis. Try again, or use a shorter excerpt.')
   }
   return { analysis: parsed, truncated }
 }
